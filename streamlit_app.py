@@ -48,8 +48,9 @@ if "final_articles" not in st.session_state:
 if "selected_keys" not in st.session_state:
     st.session_state.selected_keys = []
 
-# UI
-st.title("🎥 네이버 뉴스 검색기 (주요언론사 필터 & 모바일 링크 지원)")
+# UI 시작
+st.title("🎥 네이버 뉴스 검색기 (체크박스 일괄 제어 + 주요언론 필터)")
+
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
 
 default_keywords = ["육군", "국방", "외교", "안보", "북한",
@@ -58,6 +59,7 @@ default_keywords = ["육군", "국방", "외교", "안보", "북한",
 input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".join(default_keywords))
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
+# 뉴스 검색 버튼
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
         all_articles = []
@@ -69,17 +71,13 @@ if st.button("🔍 뉴스 검색"):
                 url = a["link"]
                 domain, press = extract_press_name(a.get("originallink") or url)
 
-                # 주요언론사 필터
                 if search_mode == "주요언론사만" and press is None:
                     continue
-
-                # 동영상 필터
                 if search_mode == "동영상만":
                     if not any(kw in title for kw in ["영상", "동영상", "영상보기"]) and "동영상" not in desc:
                         continue
-
                 if press is None:
-                    continue  # 주요언론사 외 필터
+                    continue
 
                 article = {
                     "title": title,
@@ -93,21 +91,26 @@ if st.button("🔍 뉴스 검색"):
         st.session_state.final_articles = list(unique_articles.values())
         st.session_state.selected_keys = [a["key"] for a in st.session_state.final_articles]
 
-# 미리보기
+# 미리보기 영역
 if st.session_state.final_articles:
     st.subheader("🧾 기사 미리보기")
+
+    col1, col2 = st.columns([0.3, 0.7])
+    with col1:
+        if st.button("✅ 전체 선택"):
+            st.session_state.selected_keys = [a["key"] for a in st.session_state.final_articles]
+        if st.button("❌ 전체 해제"):
+            st.session_state.selected_keys = []
+
     for article in st.session_state.final_articles:
         key = article["key"]
-        cols = st.columns([0.85, 0.15])
-        with cols[0]:
-            st.markdown(f" ■ {article['title']} ({article['press']})")
-            st.markdown(f"[📱 기사 바로가기]({convert_to_mobile_link(article['url'])})")
-        with cols[1]:
-            checked = st.checkbox("✅", value=key in st.session_state.selected_keys, key=key)
-            if checked and key not in st.session_state.selected_keys:
-                st.session_state.selected_keys.append(key)
-            elif not checked and key in st.session_state.selected_keys:
-                st.session_state.selected_keys.remove(key)
+        checked = key in st.session_state.selected_keys
+        new_check = st.checkbox(f" ■ {article['title']} ({article['press']})", value=checked, key=key)
+        if new_check and key not in st.session_state.selected_keys:
+            st.session_state.selected_keys.append(key)
+        elif not new_check and key in st.session_state.selected_keys:
+            st.session_state.selected_keys.remove(key)
+        st.markdown(f"[📱 기사 바로가기]({convert_to_mobile_link(article['url'])})")
 
 # 결과 출력
 if st.button("📄 선택된 결과 출력"):
