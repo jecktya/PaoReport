@@ -23,7 +23,7 @@ press_name_map = {
 def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
-        return domain, press_name_map.get(domain, None)
+        return domain, press_name_map.get(domain, domain)  # fallback to domain name if not in map
     except:
         return None, None
 
@@ -60,9 +60,7 @@ if "copied_text" not in st.session_state:
 st.title("📰 네이버 뉴스 검색기")
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만 (최근 4시간)", "주요언론사만"])
 
-def_keywords = ["육군", "국방", "외교", "안보", "북한",
-                "신병교육대", "훈련", "간부", "장교",
-                "부사관", "병사", "용사", "군무원"]
+def_keywords = ["육군", "국방", "외교", "안보", "북한", "신병교육대", "훈련", "간부", "장교", "부사관", "병사", "용사", "군무원"]
 input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".join(def_keywords))
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
@@ -78,7 +76,7 @@ if st.button("🔍 뉴스 검색"):
                 pubdate = parse_pubdate(a.get("pubDate", ""))
                 domain, press = extract_press_name(a.get("originallink") or url)
 
-                if search_mode == "주요언론사만" and press is None:
+                if search_mode == "주요언론사만" and press not in press_name_map.values():
                     continue
                 if search_mode == "동영상만 (최근 4시간)":
                     now = datetime.utcnow()
@@ -86,20 +84,20 @@ if st.button("🔍 뉴스 검색"):
                         continue
                     if not any(kw in title for kw in ["영상", "동영상", "영상보기"]) and "동영상" not in desc:
                         continue
-                if press is None:
-                    continue
 
                 article = {
                     "title": title,
                     "url": url,
                     "press": press,
+                    "pubdate": pubdate,
                     "key": url
                 }
                 all_articles.append(article)
 
         unique_articles = {a["url"]: a for a in all_articles}
-        st.session_state.final_articles = list(unique_articles.values())
-        st.session_state.selected_keys = [a["key"] for a in st.session_state.final_articles]
+        sorted_articles = sorted(unique_articles.values(), key=lambda x: x["pubdate"] or datetime.min, reverse=True)
+        st.session_state.final_articles = sorted_articles
+        st.session_state.selected_keys = [a["key"] for a in sorted_articles]
 
 if st.session_state.final_articles:
     st.subheader("🧾 기사 미리보기 및 복사")
@@ -115,7 +113,9 @@ if st.session_state.final_articles:
     for article in st.session_state.final_articles:
         key = article["key"]
         checked = key in st.session_state.selected_keys
-        new_check = st.checkbox(f" ■ {article['title']} ({article['press']})", value=checked, key=key)
+        pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article["pubdate"] else "시간 없음"
+        new_check = st.checkbox(f" ■ {article['title']} ({article['press']}) - {pub_str}", value=checked, key=key)
+
         if new_check and key not in st.session_state.selected_keys:
             st.session_state.selected_keys.append(key)
         elif not new_check and key in st.session_state.selected_keys:
@@ -128,7 +128,7 @@ if st.session_state.final_articles:
             if st.button(f"📋 1건 복사", key=key + "_copy"):
                 st.session_state["copied_text"] = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
 
-        if st.session_state.get("copied_text") and st.session_state.get("copied_text").startswith(f"[{article['press']}] {article['title']}"):
+        if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
             st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
 
         if key in st.session_state.selected_keys:
