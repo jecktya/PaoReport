@@ -23,7 +23,7 @@ press_name_map = {
 def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
-        return domain, press_name_map.get(domain, domain)  # fallback to domain name if not in map
+        return domain, press_name_map.get(domain, domain)  # return domain as fallback if press not mapped
     except:
         return None, None
 
@@ -60,7 +60,9 @@ if "copied_text" not in st.session_state:
 st.title("📰 네이버 뉴스 검색기")
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만 (최근 4시간)", "주요언론사만"])
 
-def_keywords = ["육군", "국방", "외교", "안보", "북한", "신병교육대", "훈련", "간부", "장교", "부사관", "병사", "용사", "군무원"]
+def_keywords = ["육군", "국방", "외교", "안보", "북한",
+                "신병교육대", "훈련", "간부", "장교",
+                "부사관", "병사", "용사", "군무원"]
 input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".join(def_keywords))
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
@@ -82,7 +84,7 @@ if st.button("🔍 뉴스 검색"):
                     now = datetime.utcnow()
                     if not pubdate or (now - pubdate > timedelta(hours=4)):
                         continue
-                    if not any(kw in title for kw in ["영상", "동영상", "영상보기"]) and "동영상" not in desc:
+                    if not ("동영상" in desc or "영상" in desc or any(kw in title for kw in ["영상", "동영상", "영상보기"])):
                         continue
 
                 article = {
@@ -128,7 +130,7 @@ if st.session_state.final_articles:
             if st.button(f"📋 1건 복사", key=key + "_copy"):
                 st.session_state["copied_text"] = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
 
-        if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
+        if st.session_state.get("copied_text") and st.session_state.get("copied_text").startswith(f"[{article['press']}] {article['title']}"):
             st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
 
         if key in st.session_state.selected_keys:
