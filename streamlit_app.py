@@ -126,7 +126,8 @@ if st.session_state.final_articles:
             st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(article['url'])})")
         with col_copy:
             if st.button(f"📋 1건 복사", key=key + "_copy"):
-                st.session_state["copied_text"] = f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}"
+                st.session_state["copied_text"] = f"[{article['press']}] {article['title']}
+{convert_to_mobile_link(article['url'])}"
 
         if st.session_state.get("copied_text") and st.session_state.get("copied_text").startswith(f"■ {article['title']}"):
             st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
