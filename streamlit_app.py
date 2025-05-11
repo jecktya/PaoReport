@@ -23,8 +23,8 @@ press_name_map = {
 def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
-        return domain, press_name_map.get(domain, domain)  # return domain as fallback if press not mapped
-    except:
+        return domain, press_name_map.get(domain, domain)
+    except Exception as e:
         return None, None
 
 def convert_to_mobile_link(url):
@@ -47,7 +47,7 @@ def search_news(query):
 def parse_pubdate(pubdate_str):
     try:
         return datetime(*eut.parsedate(pubdate_str)[:6])
-    except:
+    except Exception:
         return None
 
 if "final_articles" not in st.session_state:
@@ -68,12 +68,13 @@ keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
+        now = datetime.utcnow()
         all_articles = []
         for keyword in keyword_list:
             items = search_news(keyword)
             for a in items:
                 title = a["title"].replace("<b>", "").replace("</b>", "")
-                desc = a.get("description", "")
+                desc = a.get("description", "").replace("<b>", "").replace("</b>", "")
                 url = a["link"]
                 pubdate = parse_pubdate(a.get("pubDate", ""))
                 domain, press = extract_press_name(a.get("originallink") or url)
@@ -81,8 +82,9 @@ if st.button("🔍 뉴스 검색"):
                 if search_mode == "주요언론사만" and press not in press_name_map.values():
                     continue
                 if search_mode == "동영상만 (최근 4시간)":
-                    now = datetime.utcnow()
                     if not pubdate or (now - pubdate > timedelta(hours=4)):
+                        continue
+                    if press not in press_name_map.values():
                         continue
                     if not ("동영상" in desc or "영상" in desc or any(kw in title for kw in ["영상", "동영상", "영상보기"])):
                         continue
@@ -130,7 +132,7 @@ if st.session_state.final_articles:
             if st.button(f"📋 1건 복사", key=key + "_copy"):
                 st.session_state["copied_text"] = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
 
-        if st.session_state.get("copied_text") and st.session_state.get("copied_text").startswith(f"[{article['press']}] {article['title']}"):
+        if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
             st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
 
         if key in st.session_state.selected_keys:
