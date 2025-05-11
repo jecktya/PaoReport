@@ -21,9 +21,9 @@ press_name_map = {
 def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
-        return press_name_map.get(domain, domain)  # 없으면 도메인 그대로 출력
+        return domain, press_name_map.get(domain, None)
     except:
-        return "출처없음"
+        return None, None
 
 def convert_to_mobile_link(url):
     if "n.news.naver.com/article" in url:
@@ -49,8 +49,8 @@ if "selected_keys" not in st.session_state:
     st.session_state.selected_keys = []
 
 # UI
-st.title("🎥 네이버 뉴스 검색기 (모바일 기사 링크 지원)")
-search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만"])
+st.title("🎥 네이버 뉴스 검색기 (주요언론사 필터 & 모바일 링크 지원)")
+search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
 
 default_keywords = ["육군", "국방", "외교", "안보", "북한",
                     "신병교육대", "훈련", "간부", "장교",
@@ -58,7 +58,6 @@ default_keywords = ["육군", "국방", "외교", "안보", "북한",
 input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".join(default_keywords))
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
-# 뉴스 검색 버튼
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
         all_articles = []
@@ -68,12 +67,19 @@ if st.button("🔍 뉴스 검색"):
                 title = a["title"].replace("<b>", "").replace("</b>", "")
                 desc = a.get("description", "")
                 url = a["link"]
-                press = extract_press_name(a.get("originallink") or url)
+                domain, press = extract_press_name(a.get("originallink") or url)
 
-                # 동영상 필터 조건
+                # 주요언론사 필터
+                if search_mode == "주요언론사만" and press is None:
+                    continue
+
+                # 동영상 필터
                 if search_mode == "동영상만":
                     if not any(kw in title for kw in ["영상", "동영상", "영상보기"]) and "동영상" not in desc:
                         continue
+
+                if press is None:
+                    continue  # 주요언론사 외 필터
 
                 article = {
                     "title": title,
@@ -83,7 +89,6 @@ if st.button("🔍 뉴스 검색"):
                 }
                 all_articles.append(article)
 
-        # 중복 제거
         unique_articles = {a["url"]: a for a in all_articles}
         st.session_state.final_articles = list(unique_articles.values())
         st.session_state.selected_keys = [a["key"] for a in st.session_state.final_articles]
