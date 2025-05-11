@@ -67,9 +67,15 @@ if st.button("🔍 뉴스 검색"):
                 if checked:
                     selected_keys.append(key)
 
-        if st.button("📄 선택된 결과 출력"):
-            st.subheader("📌 선택된 뉴스")
-            for article in final_articles:
-                if article["key"] in selected_keys:
-                    st.markdown(f"■ {article['title']} ({article['press']})")
-                    st.markdown(f"{article['url']}\n")
+if st.button("📄 선택된 결과 출력"):
+    st.subheader("📌 선택된 뉴스")
+    for article in final_articles:
+        if article["key"] in selected_keys:
+            title = article["title"]
+            press = article["press"]
+            url = article["url"]
+
+            # 출력 형식에 맞게 가공
+            st.markdown(f" ■ {title} ({press})")
+            st.markdown(f"https://naver.me/placeholder\n")  # 실제 naver.me 링크로 대체 불가
+
