@@ -1,1 +1,4 @@
-streamlit
+# requirements.txt
+streamlit==1.33.0
+requests
+beautifulsoup4
