@@ -135,7 +135,7 @@ if st.session_state.final_articles:
     with col_copy:
         if st.button(f"📋 1건 복사", key=key + "_copy"):
             st.session_state["copied_text"] = f"[{article['press']}] {article['title']}
-{convert_to_mobile_link(article['url'])}"
+{convert_to_mobile_link(article['url'])}""
 
     if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
         st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
