@@ -116,30 +116,31 @@ if st.session_state.final_articles:
 
     result_lines = []
     for article in st.session_state.final_articles:
-        key = article["key"]
-        checked = key in st.session_state.selected_keys
-        pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article["pubdate"] else "시간 없음"
-                        st.markdown(f"<div style='user-select: text;'>■ {article['title']} ({article['press']})</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
-        new_check = st.checkbox("선택", value=checked, key=key)
+    key = article["key"]
+    checked = key in st.session_state.selected_keys
+    pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article["pubdate"] else "시간 없음"
 
-        if new_check and key not in st.session_state.selected_keys:
-            st.session_state.selected_keys.append(key)
-        elif not new_check and key in st.session_state.selected_keys:
-            st.session_state.selected_keys.remove(key)
+    st.markdown(f"<div style='user-select: text;'>■ {article['title']} ({article['press']})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
+    new_check = st.checkbox("선택", value=checked, key=key)
 
-        col_preview, col_copy = st.columns([0.75, 0.25])
-        with col_preview:
-            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(article['url'])})")
-        with col_copy:
-            if st.button(f"📋 1건 복사", key=key + "_copy"):
-                st.session_state["copied_text"] = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
+    if new_check and key not in st.session_state.selected_keys:
+        st.session_state.selected_keys.append(key)
+    elif not new_check and key in st.session_state.selected_keys:
+        st.session_state.selected_keys.remove(key)
 
-        if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
-            st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
+    col_preview, col_copy = st.columns([0.75, 0.25])
+    with col_preview:
+        st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(article['url'])})")
+    with col_copy:
+        if st.button(f"📋 1건 복사", key=key + "_copy"):
+            st.session_state["copied_text"] = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
 
-        if key in st.session_state.selected_keys:
-            result_lines.append(f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}")
+    if st.session_state.get("copied_text") and st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}"):
+        st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
+
+    if key in st.session_state.selected_keys:
+        result_lines.append(f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}")\n{convert_to_mobile_link(article['url'])}")
 
     final_text = "\n\n".join(result_lines)
     st.text_area("📝 복사할 뉴스 목록", final_text, height=300)
