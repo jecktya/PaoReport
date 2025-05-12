@@ -58,7 +58,7 @@ if "selected_keys" not in st.session_state:
 if "copied_text" not in st.session_state:
     st.session_state.copied_text = ""
 
-st.title("📰 네이버 뉴스 검색기")
+st.title("📰 뉴스 검색기")
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만 (최근 4시간)", "주요언론사만"])
 
 def_keywords = ["육군", "국방", "외교", "안보", "북한",
