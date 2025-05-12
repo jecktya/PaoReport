@@ -116,7 +116,7 @@ if st.session_state.final_articles:
 
     result_lines = []
     for article in st.session_state.final_articles:
-    key = article["key"]
+        key = article["key"]
     checked = key in st.session_state.selected_keys
     pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article["pubdate"] else "시간 없음"
 
