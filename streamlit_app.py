@@ -106,6 +106,7 @@ if "copied_text" not in st.session_state:
 st.title("📰 뉴스검색기")
 search_source = st.radio("🌐 뉴스 소스 선택", ["네이버", "다음(개발중)", "RSS(개발중)"])
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
+st.markdown(f"<span style='color:gray;'>🕒 현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>", unsafe_allow_html=True)
 
 def_keywords = ["육군", "국방", "외교", "안보", "북한",
                 "신병교육대", "훈련", "간부", "장교",
