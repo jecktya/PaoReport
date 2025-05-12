@@ -59,6 +59,7 @@ if "copied_text" not in st.session_state:
     st.session_state.copied_text = ""
 
 st.title("📰 뉴스 검색기")
+search_source = st.radio("🌐 뉴스 소스 선택", ["네이버", "다음", "RSS"])
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만 (최근 4시간)", "주요언론사만"])
 
 def_keywords = ["육군", "국방", "외교", "안보", "북한",
@@ -68,6 +69,9 @@ input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
 if st.button("🔍 뉴스 검색"):
+    if search_source != "네이버":
+        st.warning("현재는 네이버 뉴스 소스만 지원됩니다. 다른 소스는 추후 지원 예정입니다.")
+        st.stop()
     with st.spinner("뉴스 검색 중..."):
         now = datetime.utcnow()
         all_articles = []
