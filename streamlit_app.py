@@ -135,4 +135,4 @@ if st.session_state.final_articles:
     with col_copy:
         if st.button(f"📋 1건 복사", key=key + "_copy"):
             st.session_state["copied_text"] = f"[{article['press']}] {article['title']}
-{convert_to_mobile_link(article['url'])}" 
+{convert_to_mobile_link(article['url'])}"
