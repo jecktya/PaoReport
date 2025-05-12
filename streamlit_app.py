@@ -51,7 +51,7 @@ def search_daum_news(query):
                 continue
         except:
             continue
-        items.append({"title": title, "link": link, "press": press, "pubDate": datetime.now(timezone.utc)})
+        items.append({"title": title, "link": link, "press": press, "pubDate": datetime.now(timezone(timedelta(hours=9)))})
     return items
 
 def search_rss_feed(query):
@@ -92,7 +92,7 @@ def search_news(query):
 
 def parse_pubdate(pubdate_str):
     try:
-        return datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone.utc)
+        return datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone(timedelta(hours=9)))
     except Exception:
         return None
 
@@ -106,7 +106,7 @@ if "copied_text" not in st.session_state:
 st.title("📰 뉴스검색기")
 search_source = st.radio("🌐 뉴스 소스 선택", ["네이버", "다음(개발중)", "RSS(개발중)"])
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
-st.markdown(f"<span style='color:gray;'>🕒 현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:gray;'>🕒 현재 시각: {datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>", unsafe_allow_html=True)
 
 def_keywords = ["육군", "국방", "외교", "안보", "북한",
                 "신병교육대", "훈련", "간부", "장교",
@@ -124,7 +124,7 @@ if st.button("🔍 뉴스 검색"):
                 title = html.unescape(a["title"]).replace("<b>", "").replace("</b>", "")
                 desc = html.unescape(a.get("description", "")).replace("<b>", "").replace("</b>", "")
                 url = a["link"]
-                pubdate = parse_pubdate(a.get("pubDate", "")) or a.get("pubDate") or datetime.min.replace(tzinfo=timezone.utc)
+                pubdate = parse_pubdate(a.get("pubDate", "")) or a.get("pubDate") or datetime.min.replace(tzinfo=timezone(timedelta(hours=9)))
                 domain, press = extract_press_name(a.get("originallink") or url)
 
                 if search_mode == "주요언론사만" and press not in press_name_map.values():
