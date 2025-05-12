@@ -140,9 +140,8 @@ if st.session_state.final_articles:
         st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
 
     if key in st.session_state.selected_keys:
-        result_lines.append(f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}")\n{convert_to_mobile_link(article['url'])}")
+        result_lines.append(f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}")
 
-    final_text = "\n\n".join(result_lines)
-    st.text_area("📝 복사할 뉴스 목록", final_text, height=300)
+final_text, final_text, height=300)
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_text, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
