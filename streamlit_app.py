@@ -3,6 +3,7 @@
 import streamlit as st
 import requests
 import urllib.parse
+import html
 from datetime import datetime, timedelta
 import email.utils as eut
 
@@ -73,8 +74,8 @@ if st.button("🔍 뉴스 검색"):
         for keyword in keyword_list:
             items = search_news(keyword)
             for a in items:
-                title = a["title"].replace("<b>", "").replace("</b>", "")
-                desc = a.get("description", "").replace("<b>", "").replace("</b>", "")
+                title = html.unescape(a["title"]).replace("<b>", "").replace("</b>", "")
+                desc = html.unescape(a.get("description", "")).replace("<b>", "").replace("</b>", "")
                 url = a["link"]
                 pubdate = parse_pubdate(a.get("pubDate", ""))
                 domain, press = extract_press_name(a.get("originallink") or url)
