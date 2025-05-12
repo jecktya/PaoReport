@@ -119,9 +119,9 @@ if st.session_state.final_articles:
         key = article["key"]
         checked = key in st.session_state.selected_keys
         pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article["pubdate"] else "시간 없음"
-                    st.markdown(f"<div style='user-select: text;'>■ {article['title']} ({article['press']})</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
-        new_check = st.checkbox("선택", value=checked, key=key)
+                st.markdown(f"<div style='user-select: text;'>■ {article['title']} ({article['press']})</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
+    new_check = st.checkbox("선택", value=checked, key=key)
 
         if new_check and key not in st.session_state.selected_keys:
             st.session_state.selected_keys.append(key)
