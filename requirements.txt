@@ -1,5 +1,5 @@
 # requirements.txt
-streamlit==1.33.0
+streamlit
 requests
 beautifulsoup4
 feedparser
