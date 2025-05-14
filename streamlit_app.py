@@ -10,9 +10,11 @@ from bs4 import BeautifulSoup
 import feedparser
 from langdetect import detect
 
-NAVER_CLIENT_ID = st.secrets["NAVER_CLIENT_ID"]
-NAVER_CLIENT_SECRET = st.secrets["NAVER_CLIENT_SECRET"]
+# API 키 로드
+NAVER_CLIENT_ID = st.secrets.get("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET = st.secrets.get("NAVER_CLIENT_SECRET")
 
+# 언론사 매핑
 press_name_map = {
     "chosun.com": "조선일보", "yna.co.kr": "연합뉴스", "hani.co.kr": "한겨레",
     "joongang.co.kr": "중앙일보", "mbn.co.kr": "MBN", "kbs.co.kr": "KBS",
@@ -28,32 +30,36 @@ def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
         return domain, press_name_map.get(domain, domain)
-    except Exception:
+    except:
         return None, None
+
 
 def convert_to_mobile_link(url):
     if "n.news.naver.com/article" in url:
         return url.replace("n.news.naver.com/article", "n.news.naver.com/mnews/article")
     return url
 
+
 def search_news(query):
-    enc_query = urllib.parse.quote(query)
-    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display=30&sort=date"
-    headers = {
-        "X-Naver-Client-Id": NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET,
-    }
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200:
-        return res.json().get("items", [])
+    # Naver OpenAPI 호출
+    enc = urllib.parse.quote(query)
+    url = f"https://openapi.naver.com/v1/search/news.json?query={enc}&display=30&sort=date"
+    headers = {"X-Naver-Client-Id": NAVER_CLIENT_ID, "X-Naver-Client-Secret": NAVER_CLIENT_SECRET}
+    r = requests.get(url, headers=headers)
+    if r.status_code == 200:
+        return r.json().get("items", [])
     return []
+
 
 def parse_pubdate(pubdate_str):
     try:
-        return datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone(timedelta(hours=9)))
+        dt = datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone(timedelta(hours=9)))
+        return dt
     except:
         return None
 
+
+# 세션 초기화
 if "final_articles" not in st.session_state:
     st.session_state.final_articles = []
 if "selected_keys" not in st.session_state:
@@ -61,9 +67,13 @@ if "selected_keys" not in st.session_state:
 if "copied_text" not in st.session_state:
     st.session_state.copied_text = ""
 
+# UI: 제목 및 옵션
 st.title("📰 뉴스검색기")
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
-st.markdown(f"<span style='color:gray;'>🕒 현재 시각: {datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>", unsafe_allow_html=True)
+st.markdown(
+    f"<span style='color:gray;'>🕒 현재 시각: {datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>",
+    unsafe_allow_html=True
+)
 
 def_keywords = ["육군", "국방", "외교", "안보", "북한",
                 "신병교육대", "훈련", "간부", "장교",
@@ -71,98 +81,84 @@ def_keywords = ["육군", "국방", "외교", "안보", "북한",
 input_keywords = st.text_input("🔍 키워드 입력 (쉼표로 구분)", ", ".join(def_keywords))
 keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
+# 검색 버튼
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
         now = datetime.now(timezone(timedelta(hours=9)))
-        all_articles = []
-        for keyword in keyword_list:
-            items = search_news(keyword)
+        articles = []
+        for kw in keyword_list:
+            items = search_news(kw)
             for a in items:
                 title = html.unescape(a["title"]).replace("<b>", "").replace("</b>", "")
                 desc = html.unescape(a.get("description", "")).replace("<b>", "").replace("</b>", "")
                 url = a["link"]
-                pubdate = parse_pubdate(a.get("pubDate", "")) or datetime.min.replace(tzinfo=timezone(timedelta(hours=9)))
+                pub = parse_pubdate(a.get("pubDate", "")) or datetime.min.replace(tzinfo=timezone(timedelta(hours=9)))
                 domain, press = extract_press_name(a.get("originallink") or url)
 
-                if not pubdate or (now - pubdate > timedelta(hours=4)):
+                # 4시간 필터
+                if not pub or (now - pub > timedelta(hours=4)):
                     continue
 
-                if search_mode == "주요언론사만" and press not in press_name_map.values():
-                    continue
-
+                # 모드별 필터
+                if search_mode == "주요언론사만":
+                    if press not in press_name_map.values():
+                        continue
                 if search_mode == "동영상만":
-        # 동영상 조건 진입
-        if press not in press_name_map.values():
-            continue = ["영상", "동영상", "영상보기", "보러가기"]
-        video_in_text = any(kw in desc for kw in video_keywords) or any(kw in title for kw in video_keywords)
-        video_in_url = any(v in url for v in ["/v/", "/video/", "vid="])
-        if not (video_in_text or video_in_url):
-            continue
-    video_keywords = ["영상", "동영상", "영상보기", "보러가기"]
-    video_in_text = any(kw in desc for kw in video_keywords) or any(kw in title for kw in video_keywords)
-    video_in_url = any(v in url for v in ["/v/", "/video/", "vid="])
-    if not (video_in_text or video_in_url):
-        continue
-                    if not ("동영상" in desc or "영상" in desc or any(kw in title for kw in ["영상", "동영상", "영상보기"])):
+                    if press not in press_name_map.values():
+                        continue
+                    video_keys = ["영상", "동영상", "영상보기", "보러가기"]
+                    video_text = any(k in desc for k in video_keys) or any(k in title for k in video_keys)
+                    video_url = any(p in url for p in ["/v/", "/video/", "vid="])
+                    if not (video_text or video_url):
                         continue
 
-                article = {
-                    "title": title,
-                    "url": url,
-                    "press": press,
-                    "pubdate": pubdate,
-                    "key": url
-                }
-                all_articles.append(article)
+                articles.append({"title": title, "url": url, "press": press, "pubdate": pub})
 
-        unique_articles = {a["url"]: a for a in all_articles}
-        sorted_articles = sorted(unique_articles.values(), key=lambda x: x["pubdate"], reverse=True)
-        st.session_state.final_articles = sorted_articles
-        st.session_state.selected_keys = [a["key"] for a in sorted_articles]
+        # 중복 제거 및 정렬
+        unique = {a['url']: a for a in articles}
+        sorted_list = sorted(unique.values(), key=lambda x: x['pubdate'], reverse=True)
+        st.session_state.final_articles = sorted_list
+        st.session_state.selected_keys = [a['url'] for a in sorted_list]
 
+# 결과 출력
 if st.session_state.final_articles:
     st.subheader("🧾 기사 미리보기 및 복사")
-
-    col1, col2 = st.columns([0.3, 0.7])
+    col1, _ = st.columns([0.3, 0.7])
     with col1:
         if st.button("✅ 전체 선택"):
-            st.session_state.selected_keys = [a["key"] for a in st.session_state.final_articles]
+            st.session_state.selected_keys = [a['url'] for a in st.session_state.final_articles]
         if st.button("❌ 전체 해제"):
             st.session_state.selected_keys = []
 
-    result_lines = []
-    for article in st.session_state.final_articles:
-        key = article["key"]
+    result_texts = []
+    for art in st.session_state.final_articles:
+        key = art['url']
         checked = key in st.session_state.selected_keys
-        pub_str = article["pubdate"].strftime("%Y-%m-%d %H:%M") if article.get("pubdate") else "시간 없음"
+        pub_str = art['pubdate'].strftime('%Y-%m-%d %H:%M')
 
-        st.markdown(f"<div style='user-select: text;'>■ {article['title']} ({article['press']})</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
-        new_check = st.checkbox("선택", value=checked, key=key)
-
-        if new_check and key not in st.session_state.selected_keys:
+        chk = st.checkbox("선택", value=checked, key=key)
+        if chk and key not in st.session_state.selected_keys:
             st.session_state.selected_keys.append(key)
-        elif not new_check and key in st.session_state.selected_keys:
+        elif not chk and key in st.session_state.selected_keys:
             st.session_state.selected_keys.remove(key)
 
-        col_preview, col_copy = st.columns([0.75, 0.25])
-        with col_preview:
-            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(article['url'])})")
-        with col_copy:
-            if st.button(f"📋 1건 복사", key=key + "_copy"):
-                copied_text = f"[{article['press']}] {article['title']}\n{convert_to_mobile_link(article['url'])}"
-                st.session_state["copied_text"] = copied_text
+        preview, copy_col = st.columns([0.75, 0.25])
+        with preview:
+            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+        with copy_col:
+            if st.button("📋 1건 복사", key=key+"_copy"):
+                ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
+                st.session_state.copied_text = ctext
 
-        if (
-            st.session_state.get("copied_text") and 
-            st.session_state["copied_text"].startswith(f"[{article['press']}] {article['title']}")
-        ):
-            st.text_area("복사된 내용", st.session_state["copied_text"], height=80)
+        if st.session_state.copied_text.startswith(f"[{art['press']}] {art['title']}"):
+            st.text_area("복사된 내용", st.session_state.copied_text, height=80)
 
         if key in st.session_state.selected_keys:
-            result_lines.append(f"■ {article['title']} ({article['press']})\n{convert_to_mobile_link(article['url'])}")
+            result_texts.append(f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
 
-    final_text = "\n\n".join(result_lines)
-    st.text_area("📝 복사할 뉴스 목록", final_text, height=300)
-    st.download_button("📄 복사 내용 다운로드 (.txt)", final_text, file_name="news.txt")
+    final_txt = "\n\n".join(result_texts)
+    st.text_area("📝 복사할 뉴스 목록", final_txt, height=300)
+    st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
