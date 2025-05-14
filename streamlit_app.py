@@ -106,7 +106,7 @@ if st.button("🔍 뉴스 검색"):
                 if search_mode == "동영상만":
                     if press not in press_name_map.values():
                         continue
-                    video_keys = ["영상", "동영상", "영상보기", "보러가기"]
+                    video_keys = ["영상", "동영상", "영상보기", "보러가기", "뉴스영상", "영상뉴스", "클릭하세요", "바로보기"]
                     video_text = any(k in desc for k in video_keys) or any(k in title for k in video_keys)
                     video_url = any(p in url for p in ["/v/", "/video/", "vid="])
                     if not (video_text or video_url):
