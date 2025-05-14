@@ -33,15 +33,12 @@ def extract_press_name(url):
     except:
         return None, None
 
-
 def convert_to_mobile_link(url):
     if "n.news.naver.com/article" in url:
         return url.replace("n.news.naver.com/article", "n.news.naver.com/mnews/article")
     return url
 
-
 def search_news(query):
-    # Naver OpenAPI 호출
     enc = urllib.parse.quote(query)
     url = f"https://openapi.naver.com/v1/search/news.json?query={enc}&display=30&sort=date"
     headers = {"X-Naver-Client-Id": NAVER_CLIENT_ID, "X-Naver-Client-Secret": NAVER_CLIENT_SECRET}
@@ -50,14 +47,12 @@ def search_news(query):
         return r.json().get("items", [])
     return []
 
-
 def parse_pubdate(pubdate_str):
     try:
         dt = datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone(timedelta(hours=9)))
         return dt
     except:
         return None
-
 
 # 세션 초기화
 if "final_articles" not in st.session_state:
@@ -86,6 +81,7 @@ if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
         now = datetime.now(timezone(timedelta(hours=9)))
         articles = []
+
         for kw in keyword_list:
             items = search_news(kw)
             for a in items:
@@ -103,6 +99,7 @@ if st.button("🔍 뉴스 검색"):
                 if search_mode == "주요언론사만":
                     if press not in press_name_map.values():
                         continue
+
                 if search_mode == "동영상만":
                     if press not in press_name_map.values():
                         continue
@@ -138,12 +135,21 @@ if st.session_state.final_articles:
 
         st.markdown(f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str} | {search_mode}</div>", unsafe_allow_html=True)
-        with copy_col:
-            if st.button("📋 1건 복사", key=key+"_copy"):
+        new_check = st.checkbox("선택", value=checked, key=key)
+        if new_check and key not in st.session_state.selected_keys:
+            st.session_state.selected_keys.append(key)
+        elif not new_check and key in st.session_state.selected_keys:
+            st.session_state.selected_keys.remove(key)
+
+        col_preview, col_copy = st.columns([0.75, 0.25])
+        with col_preview:
+            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+        with col_copy:
+            if st.button("📋 1건 복사", key=key + "_copy"):
                 ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                 st.session_state.copied_text = ctext
 
-        if st.session_state.copied_text.startswith(f"[{art['press']}] {art['title']}"):
+        if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
             st.text_area("복사된 내용", st.session_state.copied_text, height=80)
 
         if key in st.session_state.selected_keys:
