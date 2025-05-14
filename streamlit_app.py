@@ -137,16 +137,7 @@ if st.session_state.final_articles:
         pub_str = art['pubdate'].strftime('%Y-%m-%d %H:%M')
 
         st.markdown(f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str}</div>", unsafe_allow_html=True)
-        chk = st.checkbox("선택", value=checked, key=key)
-        if chk and key not in st.session_state.selected_keys:
-            st.session_state.selected_keys.append(key)
-        elif not chk and key in st.session_state.selected_keys:
-            st.session_state.selected_keys.remove(key)
-
-        preview, copy_col = st.columns([0.75, 0.25])
-        with preview:
-            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+        st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str} | {search_mode}</div>", unsafe_allow_html=True)
         with copy_col:
             if st.button("📋 1건 복사", key=key+"_copy"):
                 ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
