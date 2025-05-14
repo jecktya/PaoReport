@@ -91,6 +91,7 @@ if st.button("🔍 뉴스 검색"):
                     continue
 
                 if search_mode == "동영상만":
+        # 동영상 조건 진입
         if press not in press_name_map.values():
             continue = ["영상", "동영상", "영상보기", "보러가기"]
         video_in_text = any(kw in desc for kw in video_keywords) or any(kw in title for kw in video_keywords)
