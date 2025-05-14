@@ -29,7 +29,14 @@ press_name_map = {
 def extract_press_name(url):
     try:
         domain = urllib.parse.urlparse(url).netloc.replace("www.", "")
-        return domain, press_name_map.get(domain, domain)
+        # 서브도메인 처리: mapping 키와 정확히 일치하거나, 키로 끝나면 매핑
+        for key, name in press_name_map.items():
+            if domain == key or domain.endswith("." + key):
+                return domain, name
+        # 기본적으로 도메인을 그대로 반환
+        return domain, domain
+    except:
+        return None, None
     except:
         return None, None
 
