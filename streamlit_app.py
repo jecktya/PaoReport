@@ -33,10 +33,12 @@ def extract_press_name(url):
     except:
         return None, None
 
+
 def convert_to_mobile_link(url):
     if "n.news.naver.com/article" in url:
         return url.replace("n.news.naver.com/article", "n.news.naver.com/mnews/article")
     return url
+
 
 def search_news(query):
     enc = urllib.parse.quote(query)
@@ -46,6 +48,7 @@ def search_news(query):
     if r.status_code == 200:
         return r.json().get("items", [])
     return []
+
 
 def parse_pubdate(pubdate_str):
     try:
@@ -80,7 +83,7 @@ keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
         now = datetime.now(timezone(timedelta(hours=9)))
-        articles = []
+        url_map = {}
 
         for kw in keyword_list:
             items = search_news(kw)
@@ -96,10 +99,8 @@ if st.button("🔍 뉴스 검색"):
                     continue
 
                 # 모드별 필터
-                if search_mode == "주요언론사만":
-                    if press not in press_name_map.values():
-                        continue
-
+                if search_mode == "주요언론사만" and press not in press_name_map.values():
+                    continue
                 if search_mode == "동영상만":
                     if press not in press_name_map.values():
                         continue
@@ -109,11 +110,24 @@ if st.button("🔍 뉴스 검색"):
                     if not (video_text or video_url):
                         continue
 
-                articles.append({"title": title, "url": url, "press": press, "pubdate": pub})
+                # 중복 URL 관리 및 키워드 매핑
+                if url not in url_map:
+                    url_map[url] = {
+                        "title": title,
+                        "url": url,
+                        "press": press,
+                        "pubdate": pub,
+                        "matched": set([kw])
+                    }
+                else:
+                    url_map[url]["matched"].add(kw)
 
-        # 중복 제거 및 정렬
-        unique = {a['url']: a for a in articles}
-        sorted_list = sorted(unique.values(), key=lambda x: x['pubdate'], reverse=True)
+        # 결과 정리
+        articles = []
+        for v in url_map.values():
+            v["matched"] = sorted(v["matched"])
+            articles.append(v)
+        sorted_list = sorted(articles, key=lambda x: x['pubdate'], reverse=True)
         st.session_state.final_articles = sorted_list
         st.session_state.selected_keys = [a['url'] for a in sorted_list]
 
@@ -132,9 +146,16 @@ if st.session_state.final_articles:
         key = art['url']
         checked = key in st.session_state.selected_keys
         pub_str = art['pubdate'].strftime('%Y-%m-%d %H:%M')
+        matched = ", ".join(art['matched'])
 
-        st.markdown(f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='color:gray;font-size:13px;'>🕒 {pub_str} | {search_mode}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<div style='color:gray;font-size:13px;'>🕒 {pub_str} | 키워드: {matched}</div>",
+            unsafe_allow_html=True
+        )
         new_check = st.checkbox("선택", value=checked, key=key)
         if new_check and key not in st.session_state.selected_keys:
             st.session_state.selected_keys.append(key)
@@ -159,3 +180,4 @@ if st.session_state.final_articles:
     st.text_area("📝 복사할 뉴스 목록", final_txt, height=300)
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
+```
