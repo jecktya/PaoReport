@@ -36,49 +36,7 @@ def convert_to_mobile_link(url):
         return url.replace("n.news.naver.com/article", "n.news.naver.com/mnews/article")
     return url
 
-def search_daum_news(query):
-    encoded_query = urllib.parse.quote(query)
-    url = f"https://search.daum.net/search?w=news&sort=recency&q={encoded_query}"
-    res = requests.get(url)
-    soup = BeautifulSoup(res.text, "html.parser")
-    items = []
-    for tag in soup.select(".wrap_cont .tit_main.fn a"):
-        title = tag.get_text(strip=True)
-        link = tag.get("href")
-        domain, press = extract_press_name(link)
-        try:
-            if detect(title) != "ko":
-                continue
-        except:
-            continue
-        items.append({"title": title, "link": link, "press": press, "pubDate": datetime.now(timezone(timedelta(hours=9)))})
-    return items
-
-def search_rss_feed(query):
-    feed_url = f"https://news.google.com/rss/search?q={urllib.parse.quote(query)}"
-    feed = feedparser.parse(feed_url)
-    items = []
-    for entry in feed.entries:
-        title = entry.title
-        link = entry.link
-        desc = entry.get("description", "")
-        pubdate = datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(timezone.utc)
-        domain, press = extract_press_name(link)
-        try:
-            if detect(title + " " + desc) != "ko":
-                continue
-        except:
-            continue
-        if press not in press_name_map.values():
-            continue
-        items.append({"title": title, "link": link, "press": press, "pubDate": pubdate})
-    return items
-
 def search_news(query):
-    if search_source == "다음(개발중)":
-        return search_daum_news(query)
-    elif search_source == "RSS(개발중)":
-        return search_rss_feed(query)
     enc_query = urllib.parse.quote(query)
     url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display=30&sort=date"
     headers = {
@@ -93,7 +51,7 @@ def search_news(query):
 def parse_pubdate(pubdate_str):
     try:
         return datetime(*eut.parsedate(pubdate_str)[:6], tzinfo=timezone(timedelta(hours=9)))
-    except Exception:
+    except:
         return None
 
 if "final_articles" not in st.session_state:
@@ -104,7 +62,6 @@ if "copied_text" not in st.session_state:
     st.session_state.copied_text = ""
 
 st.title("📰 뉴스검색기")
-search_source = st.radio("🌐 뉴스 소스 선택", ["네이버", "다음(개발중)", "RSS(개발중)"])
 search_mode = st.radio("🗂️ 검색 유형 선택", ["전체", "동영상만", "주요언론사만"])
 st.markdown(f"<span style='color:gray;'>🕒 현재 시각: {datetime.now(timezone(timedelta(hours=9))).strftime('%Y-%m-%d %H:%M:%S')} (4시간 이내 뉴스만 검색해요)</span>", unsafe_allow_html=True)
 
@@ -116,7 +73,7 @@ keyword_list = [k.strip() for k in input_keywords.split(",") if k.strip()]
 
 if st.button("🔍 뉴스 검색"):
     with st.spinner("뉴스 검색 중..."):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone(timedelta(hours=9)))
         all_articles = []
         for keyword in keyword_list:
             items = search_news(keyword)
@@ -124,14 +81,16 @@ if st.button("🔍 뉴스 검색"):
                 title = html.unescape(a["title"]).replace("<b>", "").replace("</b>", "")
                 desc = html.unescape(a.get("description", "")).replace("<b>", "").replace("</b>", "")
                 url = a["link"]
-                pubdate = parse_pubdate(a.get("pubDate", "")) or a.get("pubDate") or datetime.min.replace(tzinfo=timezone(timedelta(hours=9)))
+                pubdate = parse_pubdate(a.get("pubDate", "")) or datetime.min.replace(tzinfo=timezone(timedelta(hours=9)))
                 domain, press = extract_press_name(a.get("originallink") or url)
+
+                if not pubdate or (now - pubdate > timedelta(hours=4)):
+                    continue
 
                 if search_mode == "주요언론사만" and press not in press_name_map.values():
                     continue
+
                 if search_mode == "동영상만":
-                    if not pubdate or (now - pubdate > timedelta(hours=4)):
-                        continue
                     if press not in press_name_map.values():
                         continue
                     if not ("동영상" in desc or "영상" in desc or any(kw in title for kw in ["영상", "동영상", "영상보기"])):
@@ -147,7 +106,7 @@ if st.button("🔍 뉴스 검색"):
                 all_articles.append(article)
 
         unique_articles = {a["url"]: a for a in all_articles}
-        sorted_articles = sorted(unique_articles.values(), key=lambda x: x["pubdate"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+        sorted_articles = sorted(unique_articles.values(), key=lambda x: x["pubdate"], reverse=True)
         st.session_state.final_articles = sorted_articles
         st.session_state.selected_keys = [a["key"] for a in sorted_articles]
 
