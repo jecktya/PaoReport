@@ -12,7 +12,7 @@ import re # 정규표현식 모듈 추가
 # scikit-learn 임포트 (자동 그룹화에 필요)
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity # 이 임포트는 더 이상 직접 사용되지 않지만, 다른 곳에서 사용될 가능성을 위해 유지
 
 # API 키 로드
 # Streamlit Secrets를 사용하여 환경 변수에서 안전하게 API 키를 가져옵니다.
@@ -140,21 +140,17 @@ def auto_group_articles(articles, max_group_size=3, similarity_threshold=0.3):
     except ValueError: # 모든 문서가 비어있거나 단어가 없는 경우
         return []
 
-    # 코사인 유사도 계산
-    cosine_sim_matrix = cosine_similarity(tfidf_matrix)
-    
     # AgglomerativeClustering (응집형 계층적 클러스터링)
     # distance_threshold: 클러스터 병합을 중단할 거리 임계값 (1 - 유사도)
-    # affinity='precomputed': 미리 계산된 거리/유사도 행렬을 사용
+    # metric='cosine': 코사인 유사도를 거리 척도로 사용 (모델이 내부적으로 계산)
     # linkage='average': 평균 연결법 (클러스터 간 평균 거리를 사용)
     
     # 유사도 임계값을 거리 임계값으로 변환 (1 - 유사도)
-    model = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=1 - similarity_threshold)
+    # TypeError 해결: affinity 대신 metric 사용
+    model = AgglomerativeClustering(n_clusters=None, metric='cosine', linkage='average', distance_threshold=1 - similarity_threshold)
     
-    # 유사도 행렬을 거리 행렬로 변환 (1 - 유사도)
-    distance_matrix = 1 - cosine_sim_matrix
-    
-    labels = model.fit_predict(distance_matrix)
+    # TF-IDF 벡터를 직접 모델에 전달 (metric='cosine'이 내부적으로 처리)
+    labels = model.fit_predict(tfidf_matrix)
 
     # 클러스터 결과 정리
     clusters = {}
@@ -486,4 +482,3 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
-
