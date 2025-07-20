@@ -394,6 +394,7 @@ if st.session_state.final_articles:
                 st.session_state.selected_keys = list(set(st.session_state.selected_keys + all_auto_group_urls))
             else:
                 st.session_state.selected_keys = [url for url in st.session_state.selected_keys if url not in all_auto_group_urls]
+            st.experimental_rerun() # 변경 사항 즉시 반영
 
         all_auto_group_urls_set = set()
         for group in st.session_state.auto_groups:
@@ -422,6 +423,7 @@ if st.session_state.final_articles:
                     st.session_state.selected_keys = list(set(st.session_state.selected_keys + current_group_urls))
                 else:
                     st.session_state.selected_keys = [url for url in st.session_state.selected_keys if url not in current_group_urls]
+                st.experimental_rerun() # 변경 사항 즉시 반영
 
             # 그룹 제목과 그룹 선택 체크박스를 한 줄에 표시
             col_group_title, col_group_checkbox = st.columns([0.8, 0.2])
@@ -453,6 +455,7 @@ if st.session_state.final_articles:
                     else:
                         if item_key in st.session_state.selected_keys:
                             st.session_state.selected_keys.remove(item_key)
+                    st.experimental_rerun() # 변경 사항 즉시 반영
 
                 def update_manual_grouping(item_key):
                     if st.session_state[f"manual_group_checkbox_{item_key}"]:
@@ -461,6 +464,7 @@ if st.session_state.final_articles:
                     else:
                         if item_key in st.session_state.manual_grouped_keys:
                             st.session_state.manual_grouped_keys.remove(item_key)
+                    st.experimental_rerun() # 변경 사항 즉시 반영
 
                 st.markdown(
                     f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
@@ -533,6 +537,7 @@ if st.session_state.final_articles:
                 else:
                     if item_key in st.session_state.selected_keys:
                         st.session_state.selected_keys.remove(item_key)
+                st.experimental_rerun() # 변경 사항 즉시 반영
 
             def update_manual_grouping(item_key):
                 if st.session_state[f"manual_group_checkbox_{item_key}"]:
@@ -541,6 +546,7 @@ if st.session_state.final_articles:
                 else:
                     if item_key in st.session_state.manual_grouped_keys:
                         st.session_state.manual_grouped_keys.remove(item_key)
+                st.experimental_rerun() # 변경 사항 즉시 반영
 
             # 기사 제목과 언론사 표시 (UI 표시용)
             st.markdown(
@@ -549,7 +555,7 @@ if st.session_state.final_articles:
             )
             # 발행일과 매칭된 키워드 표시
             st.markdown(
-                f"<div style='color:gray;font-size:13px;'>🕒 {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>",
+                f"<div style='color:gray;font-size:13px;'>� {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>",
                 unsafe_allow_html=True
             )
             
@@ -598,3 +604,4 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
+�
