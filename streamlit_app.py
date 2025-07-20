@@ -471,7 +471,7 @@ if st.session_state.final_articles:
                     unsafe_allow_html=True
                 )
                 st.markdown(
-                    f"<div style='color:gray;font-size:13px;'>🕒 {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>",
+                    f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
                     unsafe_allow_html=True
                 )
                 
@@ -555,7 +555,7 @@ if st.session_state.final_articles:
             )
             # 발행일과 매칭된 키워드 표시
             st.markdown(
-                f"<div style='color:gray;font-size:13px;'>� {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>",
+                f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate']} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
                 unsafe_allow_html=True
             )
             
@@ -593,7 +593,6 @@ if st.session_state.final_articles:
                     st.session_state.copied_text = ctext
                     st.experimental_rerun()
 
-            # 복사된 내용 표시 (가장 최근 복사된 1건만)
             if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
                 st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
 
@@ -604,4 +603,3 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
-�
