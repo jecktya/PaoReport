@@ -283,100 +283,110 @@ if st.button("🔍 뉴스 검색"):
 if st.session_state.final_articles:
     st.subheader("🧾 기사 미리보기 및 복사")
     
-    # 그룹 선택 라디오 버튼 옵션 구성
-    group_options = {"all_individual": "모든 기사 (개별 보기)"}
-    # 수동 그룹 보기 옵션 추가
-    group_options["manual_group"] = "수동 그룹 보기" 
-
-    # 자동 생성된 그룹들을 라디오 버튼 옵션에 추가
+    # 그룹 선택 selectbox 옵션 구성
+    group_options_display = {
+        "all_individual": "모든 기사 (개별 보기)",
+        "no_manual_group": "그룹 없는 기사 보기", # "수동 그룹 보기" -> "그룹 없는 기사 보기"로 변경
+        "all_auto_groups": "모든 자동 그룹 목록 보기" # 새로운 옵션
+    }
+    
+    # 자동 생성된 그룹들을 selectbox 옵션에 추가
     for group in st.session_state.auto_groups:
-        group_title_keywords = group['common_keywords'] # 이미 get_common_keywords_in_group에서 정렬됨
+        group_title_keywords = group['common_keywords']
         
         if group_title_keywords:
-            # 제목에 표시할 키워드 수를 제한 (예: 최대 2개)
             if len(group_title_keywords) > 2:
                 title_kws = ", ".join(group_title_keywords[:2]) + "..."
             else:
                 title_kws = ", ".join(group_title_keywords)
-            group_options[str(group['group_id'])] = f"자동 그룹 {group['group_id'] + 1}: {title_kws} 관련 ({len(group['articles'])}건)"
+            group_options_display[str(group['group_id'])] = f"자동 그룹 {group['group_id'] + 1}: {title_kws} 관련 ({len(group['articles'])}건)"
         else:
-            group_options[str(group['group_id'])] = f"자동 그룹 {group['group_id'] + 1} ({len(group['articles'])}건)"
+            group_options_display[str(group['group_id'])] = f"자동 그룹 {group['group_id'] + 1} ({len(group['articles'])}건)"
 
-    st.session_state.selected_group_id = st.radio(
+    # selectbox의 options 리스트와 default index 설정
+    options_keys = list(group_options_display.keys())
+    options_values = list(group_options_display.values())
+    
+    try:
+        default_index = options_keys.index(st.session_state.selected_group_id)
+    except ValueError:
+        default_index = 0 # 기본값 '모든 기사 (개별 보기)'
+
+    st.session_state.selected_group_id = st.selectbox(
         "✨ 그룹 선택",
-        options=list(group_options.keys()),
-        format_func=lambda x: group_options[x],
-        key="group_selection_radio"
+        options=options_keys,
+        format_func=lambda x: group_options_display[x],
+        index=default_index,
+        key="group_selection_selectbox"
     )
 
-    # 현재 표시할 기사 목록 결정 (UI에 보이는 기사들)
-    current_display_articles = []
-    if st.session_state.selected_group_id == "all_individual" or st.session_state.selected_group_id == "manual_group":
-        current_display_articles = st.session_state.final_articles # 모든 기사를 보여주되, 아래에서 필터링 및 정렬
-    else: # 특정 자동 그룹이 선택된 경우
-        selected_auto_group = next((g for g in st.session_state.auto_groups if str(g['group_id']) == st.session_state.selected_group_id), None)
-        if selected_auto_group:
-            current_display_articles = selected_auto_group['articles']
-    
     # 전체 선택/해제 버튼
     col_select_all, _ = st.columns([0.3, 0.7])
     with col_select_all:
         if st.button("✅ 전체 선택"):
-            st.session_state.selected_keys = [a['url'] for a in current_display_articles]
-            # 수동 그룹 선택도 함께 초기화/설정할지는 사용자 의도에 따라 다름. 여기서는 개별 선택만 제어.
+            # '모든 자동 그룹 목록 보기'일 경우, 모든 자동 그룹 기사를 선택
+            if st.session_state.selected_group_id == "all_auto_groups":
+                all_auto_group_urls = []
+                for group in st.session_state.auto_groups:
+                    all_auto_group_urls.extend([art['url'] for art in group['articles']])
+                st.session_state.selected_keys = list(set(st.session_state.selected_keys + all_auto_group_urls))
+            else:
+                st.session_state.selected_keys = [art['url'] for art in st.session_state.final_articles]
         if st.button("❌ 전체 해제"):
-            st.session_state.selected_keys = []
+            # '모든 자동 그룹 목록 보기'일 경우, 모든 자동 그룹 기사를 해제
+            if st.session_state.selected_group_id == "all_auto_groups":
+                all_auto_group_urls = set()
+                for group in st.session_state.auto_groups:
+                    all_auto_group_urls.update([art['url'] for art in group['articles']])
+                st.session_state.selected_keys = [url for url in st.session_state.selected_keys if url not in all_auto_group_urls]
+            else:
+                st.session_state.selected_keys = []
 
     # 복사할 기사들을 담을 리스트 초기화
-    # 이 리스트는 최종적으로 text_area에 들어갈 내용을 구성합니다.
     final_copy_list_for_textarea = [] 
 
     # --- "복사할 뉴스 목록" 내용 구성 로직 ---
     if st.session_state.selected_group_id == "all_individual":
         # '모든 기사 (개별 보기)' 선택 시: '선택'된 모든 기사를 '■' 형식으로 표시
-        for art in current_display_articles:
+        for art in st.session_state.final_articles: # 모든 기사 목록을 기준으로
             key = art['url']
             if key in st.session_state.selected_keys:
                 final_copy_list_for_textarea.append(f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
     
-    elif st.session_state.selected_group_id == "manual_group":
-        # '수동 그룹 보기' 선택 시: 수동 그룹화된 기사 먼저, 그 다음 일반 선택 기사
-        manual_grouped_items = []
-        manual_individual_items = []
-        
-        # 수동 그룹화된 기사들을 위한 공통 키워드 분석
-        articles_for_manual_group_kw_analysis = []
-
-        for art in current_display_articles: # current_display_articles는 final_articles와 동일
+    elif st.session_state.selected_group_id == "no_manual_group":
+        # '그룹 없는 기사 보기' 선택 시: 수동 그룹화되지 않은 기사 중 '선택'된 기사만 표시
+        final_copy_list_for_textarea.append("■ 그룹 없는 기사 관련")
+        for art in st.session_state.final_articles: # 모든 기사 목록을 기준으로
             key = art['url']
-            if key in st.session_state.selected_keys: # '선택'된 기사만 고려
-                if key in st.session_state.manual_grouped_keys: # '그룹 만들기'도 체크된 경우
-                    manual_grouped_items.append(f"- {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
-                    articles_for_manual_group_kw_analysis.append(art)
-                else: # '선택'되었지만 '그룹 만들기'는 체크되지 않은 경우
-                    manual_individual_items.append(f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
-        
-        # 수동 그룹 제목 생성
-        manual_group_title = "■ 그룹 기사 관련"
-        if articles_for_manual_group_kw_analysis:
-            common_kws = get_common_keywords_in_group(articles_for_manual_group_kw_analysis)
-            if common_kws:
-                if len(common_kws) > 2:
-                    title_kws = ", ".join(common_kws[:2]) + "..."
-                else:
-                    title_kws = ", ".join(common_kws)
-                manual_group_title = f"■ {title_kws} 관련"
-            
-        if manual_grouped_items:
-            final_copy_list_for_textarea.append(manual_group_title)
-            final_copy_list_for_textarea.extend(manual_grouped_items)
-        
-        if manual_individual_items:
-            # 수동 그룹 기사가 없었으면 바로 일반 기사 추가
-            # 수동 그룹 기사가 있었으면 그 뒤에 일반 기사 추가
-            final_copy_list_for_textarea.extend(manual_individual_items)
+            if key in st.session_state.selected_keys and key not in st.session_state.manual_grouped_keys:
+                final_copy_list_for_textarea.append(f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
+        if len(final_copy_list_for_textarea) == 1: # 제목만 있고 기사가 없으면
+             final_copy_list_for_textarea = ["선택된 기사가 없습니다."]
 
-    else: # 특정 자동 그룹이 선택된 경우
+    elif st.session_state.selected_group_id == "all_auto_groups":
+        # '모든 자동 그룹 목록 보기' 선택 시: 모든 자동 그룹을 표시하고, 각 그룹 내 '선택'된 기사들을 포함
+        for group in st.session_state.auto_groups:
+            selected_articles_in_this_auto_group = []
+            for art in group['articles']:
+                key = art['url']
+                if key in st.session_state.selected_keys:
+                    selected_articles_in_this_auto_group.append(f"- {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}")
+            
+            if selected_articles_in_this_auto_group:
+                # 자동 그룹 제목 생성
+                auto_group_title = "■ 그룹 기사 관련"
+                if group['common_keywords']:
+                    common_kws = group['common_keywords']
+                    if len(common_kws) > 2:
+                        title_kws = ", ".join(common_kws[:2]) + "..."
+                    else:
+                        title_kws = ", ".join(common_kws)
+                    auto_group_title = f"■ {title_kws} 관련"
+                
+                final_copy_list_for_textarea.append(auto_group_title)
+                final_copy_list_for_textarea.extend(selected_articles_in_this_auto_group)
+    
+    else: # 특정 자동 그룹이 선택된 경우 (기존 로직 유지)
         selected_auto_group = next((g for g in st.session_state.auto_groups if str(g['group_id']) == st.session_state.selected_group_id), None)
         if selected_auto_group:
             # 자동 그룹 제목 생성
@@ -402,75 +412,194 @@ if st.session_state.final_articles:
 
 
     # --- 개별 기사 표시 (UI에 보이는 부분) ---
-    for art in current_display_articles: # 현재 표시될 기사 목록 사용
-        key = art['url']
-        
-        # Streamlit은 체크박스 상태를 key로 관리하므로, 직접 session_state를 업데이트하는 함수를 사용합니다.
-        def update_selection(item_key):
-            if st.session_state[f"checkbox_{item_key}"]:
-                if item_key not in st.session_state.selected_keys:
-                    st.session_state.selected_keys.append(item_key)
+    # current_display_articles는 UI에 표시될 기사 목록을 결정합니다.
+    # '모든 자동 그룹 목록 보기'일 경우, final_articles를 기반으로 그룹별로 렌더링합니다.
+    if st.session_state.selected_group_id == "all_auto_groups":
+        # '모든 자동 그룹 목록 보기'일 때만 보이는 마스터 체크박스
+        def update_all_auto_groups_selection():
+            all_auto_group_urls = []
+            for group in st.session_state.auto_groups:
+                all_auto_group_urls.extend([art['url'] for art in group['articles']])
+            
+            if st.session_state.select_all_auto_groups_checkbox:
+                st.session_state.selected_keys = list(set(st.session_state.selected_keys + all_auto_group_urls))
             else:
-                if item_key in st.session_state.selected_keys:
-                    st.session_state.selected_keys.remove(item_key)
+                st.session_state.selected_keys = [url for url in st.session_state.selected_keys if url not in all_auto_group_urls]
 
-        def update_manual_grouping(item_key):
-            if st.session_state[f"manual_group_checkbox_{item_key}"]:
-                if item_key not in st.session_state.manual_grouped_keys:
-                    st.session_state.manual_grouped_keys.append(item_key)
+        # 모든 자동 그룹 내 기사들이 현재 선택되었는지 확인하여 마스터 체크박스 상태 결정
+        all_auto_group_urls_set = set()
+        for group in st.session_state.auto_groups:
+            all_auto_group_urls_set.update([art['url'] for art in group['articles']])
+        
+        is_all_auto_groups_selected = all(url in st.session_state.selected_keys for url in all_auto_group_urls_set) and len(all_auto_group_urls_set) > 0
+
+        st.checkbox(
+            "✅ 모든 자동 그룹 기사 선택/해제",
+            value=is_all_auto_groups_selected,
+            key="select_all_auto_groups_checkbox",
+            on_change=update_all_auto_groups_selection
+        )
+        st.markdown("---") # 구분선 추가
+
+        for group in st.session_state.auto_groups:
+            group_title_keywords = group['common_keywords']
+            if group_title_keywords:
+                if len(group_title_keywords) > 2:
+                    title_kws = ", ".join(group_title_keywords[:2]) + "..."
+                else:
+                    title_kws = ", ".join(group_title_keywords)
+                st.markdown(f"**### 자동 그룹 {group['group_id'] + 1}: {title_kws} 관련 ({len(group['articles'])}건)**")
             else:
-                if item_key in st.session_state.manual_grouped_keys:
-                    st.session_state.manual_grouped_keys.remove(item_key)
+                st.markdown(f"**### 자동 그룹 {group['group_id'] + 1} ({len(group['articles'])}건)**")
+            
+            for art in group['articles']: # 그룹 내 기사들을 표시
+                key = art['url']
+                
+                def update_selection(item_key):
+                    if st.session_state[f"checkbox_{item_key}"]:
+                        if item_key not in st.session_state.selected_keys:
+                            st.session_state.selected_keys.append(item_key)
+                    else:
+                        if item_key in st.session_state.selected_keys:
+                            st.session_state.selected_keys.remove(item_key)
 
-        # 기사 제목과 언론사 표시 (UI 표시용)
-        st.markdown(
-            f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
-            unsafe_allow_html=True
-        )
-        # 발행일과 매칭된 키워드 표시
-        st.markdown(
-            f"<div style='color:gray;font-size:13px;'>🕒 {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
-            unsafe_allow_html=True
-        )
+                def update_manual_grouping(item_key):
+                    if st.session_state[f"manual_group_checkbox_{item_key}"]:
+                        if item_key not in st.session_state.manual_grouped_keys:
+                            st.session_state.manual_grouped_keys.append(item_key)
+                    else:
+                        if item_key in st.session_state.manual_grouped_keys:
+                            st.session_state.manual_grouped_keys.remove(item_key)
+
+                st.markdown(
+                    f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    f"<div style='color:gray;font-size:13px;'>🕒 {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
+                    unsafe_allow_html=True
+                )
+                
+                col_checkbox_select, col_checkbox_group = st.columns([0.2, 0.8])
+
+                with col_checkbox_select:
+                    st.checkbox(
+                        "선택", 
+                        value=(key in st.session_state.selected_keys), 
+                        key=f"checkbox_{key}", 
+                        on_change=update_selection, 
+                        args=(key,)
+                    )
+                
+                with col_checkbox_group:
+                    st.checkbox(
+                        "그룹 만들기", 
+                        value=(key in st.session_state.manual_grouped_keys), 
+                        key=f"manual_group_checkbox_{key}", 
+                        on_change=update_manual_grouping, 
+                        args=(key,),
+                        disabled=False, 
+                        help="이 기사를 수동 그룹에 포함합니다." 
+                    )
+
+                col_preview, col_copy = st.columns([0.75, 0.25])
+                with col_preview:
+                    st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+                with col_copy:
+                    if st.button("📋 1건 복사", key=f"copy_{key}"):
+                        ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
+                        st.session_state.copied_text = ctext
+                        st.experimental_rerun()
+
+                if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
+                    st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
+                st.markdown("---") # 그룹 내 기사 구분선
         
-        # 체크박스 컬럼 분리
-        col_checkbox_select, col_checkbox_group = st.columns([0.2, 0.8])
+        if not st.session_state.auto_groups:
+            st.info("자동으로 그룹화된 기사가 없습니다.")
 
-        with col_checkbox_select:
-            st.checkbox(
-                "선택", 
-                value=(key in st.session_state.selected_keys), 
-                key=f"checkbox_{key}", 
-                on_change=update_selection, 
-                args=(key,)
+    else: # '모든 기사 (개별 보기)' 또는 '그룹 없는 기사 보기' 또는 특정 자동 그룹 선택 시
+        # current_display_articles는 이미 해당 조건에 맞게 필터링되어 있음
+        # '그룹 없는 기사 보기'일 경우 필터링
+        articles_to_display_in_loop = []
+        if st.session_state.selected_group_id == "no_manual_group":
+            articles_to_display_in_loop = [
+                art for art in current_display_articles if art['url'] not in st.session_state.manual_grouped_keys
+            ]
+            if not articles_to_display_in_loop:
+                st.info("그룹 없는 기사가 없습니다.")
+        else:
+            articles_to_display_in_loop = current_display_articles
+
+
+        for art in articles_to_display_in_loop: # 현재 표시될 기사 목록 사용
+            key = art['url']
+            
+            def update_selection(item_key):
+                if st.session_state[f"checkbox_{item_key}"]:
+                    if item_key not in st.session_state.selected_keys:
+                        st.session_state.selected_keys.append(item_key)
+                else:
+                    if item_key in st.session_state.selected_keys:
+                        st.session_state.selected_keys.remove(item_key)
+
+            def update_manual_grouping(item_key):
+                if st.session_state[f"manual_group_checkbox_{item_key}"]:
+                    if item_key not in st.session_state.manual_grouped_keys:
+                        st.session_state.manual_grouped_keys.append(item_key)
+                else:
+                    if item_key in st.session_state.manual_grouped_keys:
+                        st.session_state.manual_grouped_keys.remove(item_key)
+
+            # 기사 제목과 언론사 표시 (UI 표시용)
+            st.markdown(
+                f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
+                unsafe_allow_html=True
             )
-        
-        with col_checkbox_group:
-            # '그룹 만들기' 체크박스를 항상 활성화
-            st.checkbox(
-                "그룹 만들기", # 이름 변경: '기사 묶음 포함' -> '그룹 만들기'
-                value=(key in st.session_state.manual_grouped_keys), 
-                key=f"manual_group_checkbox_{key}", 
-                on_change=update_manual_grouping, 
-                args=(key,),
-                disabled=False, # 항상 활성화
-                help="이 기사를 수동 그룹에 포함합니다." # 도움말 텍스트 변경
+            # 발행일과 매칭된 키워드 표시
+            st.markdown(
+                f"<div style='color:gray;font-size:13px;'>🕒 {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
+                unsafe_allow_html=True
             )
+            
+            # 체크박스 컬럼 분리
+            col_checkbox_select, col_checkbox_group = st.columns([0.2, 0.8])
 
-        # 기사 바로보기 링크 및 1건 복사 버튼
-        col_preview, col_copy = st.columns([0.75, 0.25])
-        with col_preview:
-            st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
-        with col_copy:
-            if st.button("📋 1건 복사", key=f"copy_{key}"):
-                # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
-                ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
-                st.session_state.copied_text = ctext
-                st.experimental_rerun()
+            with col_checkbox_select:
+                st.checkbox(
+                    "선택", 
+                    value=(key in st.session_state.selected_keys), 
+                    key=f"checkbox_{key}", 
+                    on_change=update_selection, 
+                    args=(key,)
+                )
+            
+            with col_checkbox_group:
+                # '그룹 만들기' 체크박스를 항상 활성화
+                st.checkbox(
+                    "그룹 만들기", 
+                    value=(key in st.session_state.manual_grouped_keys), 
+                    key=f"manual_group_checkbox_{key}", 
+                    on_change=update_manual_grouping, 
+                    args=(key,),
+                    disabled=False, 
+                    help="이 기사를 수동 그룹에 포함합니다." 
+                )
 
-        # 복사된 내용 표시 (가장 최근 복사된 1건만)
-        if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
-            st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
+            # 기사 바로보기 링크 및 1건 복사 버튼
+            col_preview, col_copy = st.columns([0.75, 0.25])
+            with col_preview:
+                st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+            with col_copy:
+                if st.button("📋 1건 복사", key=f"copy_{key}"):
+                    # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
+                    ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
+                    st.session_state.copied_text = ctext
+                    st.experimental_rerun()
+
+            # 복사된 내용 표시 (가장 최근 복사된 1건만)
+            if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
+                st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
 
     # 최종 result_texts 구성 (텍스트 에어리어에 표시될 내용)
     if not final_copy_list_for_textarea:
