@@ -150,7 +150,8 @@ def auto_group_articles(articles, max_group_size=3, similarity_threshold=0.3):
     model = AgglomerativeClustering(n_clusters=None, metric='cosine', linkage='average', distance_threshold=1 - similarity_threshold)
     
     # TF-IDF 벡터를 직접 모델에 전달 (metric='cosine'이 내부적으로 처리)
-    labels = model.fit_predict(tfidf_matrix)
+    # Sparse data error 해결: .toarray()를 사용하여 dense array로 변환
+    labels = model.fit_predict(tfidf_matrix.toarray()) # <--- .toarray() 추가
 
     # 클러스터 결과 정리
     clusters = {}
