@@ -290,23 +290,21 @@ if st.session_state.final_articles:
     display_mode_options = {
         "all_individual": "모든 기사 (개별 보기)",
         "no_manual_group": "그룹 없는 기사 보기", 
-        "all_auto_groups": "모든 자동 그룹 목록 보기" 
+        "all_auto_groups": "그룹화된 기사만 보기" # 명칭 변경
     }
     
     # selectbox의 options 리스트와 default index 설정
     options_keys = list(display_mode_options.keys())
     options_values = list(display_mode_options.values())
     
-    try:
-        default_index = options_keys.index(st.session_state.selected_display_mode)
-    except ValueError:
-        default_index = 0 # 기본값 '모든 기사 (개별 보기)'
+    # 기본값을 "모든 기사 (개별 보기)" (all_individual)로 설정
+    default_index = options_keys.index("all_individual") 
 
     st.session_state.selected_display_mode = st.selectbox(
         "✨ 결과 출력 방식", # 용어 변경
         options=options_keys,
         format_func=lambda x: display_mode_options[x],
-        index=default_index,
+        index=default_index, # 기본값 설정
         key="display_mode_selectbox"
     )
 
@@ -359,7 +357,7 @@ if st.session_state.final_articles:
              final_copy_list_for_textarea = ["선택된 기사가 없습니다."]
 
     elif st.session_state.selected_display_mode == "all_auto_groups":
-        # '모든 자동 그룹 목록 보기' 선택 시: 모든 자동 그룹을 표시하고, 각 그룹 내 '선택'된 기사들을 포함
+        # '그룹화된 기사만 보기' 선택 시: 모든 자동 그룹을 표시하고, 각 그룹 내 '선택'된 기사들을 포함
         for group in st.session_state.auto_groups:
             selected_articles_in_this_auto_group = []
             for art in group['articles']:
@@ -385,7 +383,7 @@ if st.session_state.final_articles:
     
     # --- 개별 기사 표시 (UI에 보이는 부분) ---
     if st.session_state.selected_display_mode == "all_auto_groups":
-        # '모든 자동 그룹 목록 보기'일 때만 보이는 마스터 체크박스 (기존 로직 유지)
+        # '그룹화된 기사만 보기'일 때만 보이는 마스터 체크박스 (기존 로직 유지)
         # 이 마스터 체크박스는 모든 자동 그룹의 기사를 선택/해제하는 역할
         def update_all_auto_groups_selection_master():
             all_auto_group_urls = []
@@ -500,6 +498,7 @@ if st.session_state.final_articles:
                     st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
                 with col_copy:
                     if st.button("📋 1건 복사", key=f"copy_{key}"):
+                        # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
                         ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
                         st.session_state.copied_text = ctext
                         st.experimental_rerun()
