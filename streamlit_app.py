@@ -177,9 +177,9 @@ if st.session_state.final_articles:
             st.session_state.grouped_keys = []
 
     # 복사할 기사들을 담을 리스트 초기화
-    # 묶음 기사 (selected_keys에 있고 grouped_keys에 있으며 2개 이상 키워드)
+    # grouped_articles_for_keyword_analysis: 실제 기사 객체를 담아서 공통 키워드 분석에 사용
+    grouped_articles_for_keyword_analysis = []
     grouped_copy_items = []
-    # 일반 선택 기사 (selected_keys에 있지만 grouped_keys에는 없는)
     other_selected_copy_items = []
 
     for art in st.session_state.final_articles:
@@ -262,13 +262,35 @@ if st.session_state.final_articles:
             # '그룹 만들기'가 체크되었으면 묶음 목록에 추가 (키워드 개수 조건 제거)
             if key in st.session_state.grouped_keys:
                 grouped_copy_items.append(item_text_grouped)
+                grouped_articles_for_keyword_analysis.append(art) # 공통 키워드 분석을 위해 기사 객체 추가
             else: # '선택'되었지만 그룹 조건은 만족하지 않는 경우 일반 목록에 추가
                 other_selected_copy_items.append(item_text_normal)
+
+    # --- 공통 키워드 분석 및 제목 생성 ---
+    dynamic_group_title = "■ 그룹 기사 관련" # 공통 키워드가 없을 때의 기본 제목
+    if grouped_articles_for_keyword_analysis:
+        # 첫 번째 그룹화된 기사의 키워드 세트를 초기 공통 키워드 세트로 설정
+        common_keywords_set = set(grouped_articles_for_keyword_analysis[0]['matched'])
+        
+        # 나머지 그룹화된 기사들의 키워드 세트와 교집합을 찾음
+        for i in range(1, len(grouped_articles_for_keyword_analysis)):
+            common_keywords_set.intersection_update(set(grouped_articles_for_keyword_analysis[i]['matched']))
+        
+        if common_keywords_set:
+            # 공통 키워드가 있다면 정렬하여 제목에 사용
+            sorted_common_keywords = sorted(list(common_keywords_set))
+            # 제목에 표시할 키워드 수를 제한 (예: 최대 2개)
+            if len(sorted_common_keywords) > 2:
+                title_keywords = ", ".join(sorted_common_keywords[:2]) + "..."
+            else:
+                title_keywords = ", ".join(sorted_common_keywords)
+            dynamic_group_title = f"■ {title_keywords} 관련"
+        # else: dynamic_group_title은 이미 "■ 그룹 기사 관련"으로 초기화됨
 
     # 최종 result_texts 구성 (순서: 묶음 기사 -> 일반 선택 기사)
     result_texts = []
     if grouped_copy_items:
-        result_texts.append("■ 선택된관련내용 관련") # 공통 제목
+        result_texts.append(dynamic_group_title) # 동적으로 생성된 제목 사용
         result_texts.extend(grouped_copy_items)
     
     # 묶음 기사 뒤에 일반 선택 기사 추가
