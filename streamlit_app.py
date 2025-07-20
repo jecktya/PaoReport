@@ -115,7 +115,7 @@ def get_common_keywords_in_group(articles_in_group):
             
     return sorted(list(common_keywords_set))
 
-def auto_group_articles(articles, max_group_size=3, similarity_threshold=0.3):
+def auto_group_articles(articles, max_group_size=3, similarity_threshold=0.7): # <--- similarity_threshold를 0.7로 변경
     """
     기사들을 자동으로 그룹화하고, 각 그룹의 기사 수를 제한합니다.
     """
