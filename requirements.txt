@@ -1,6 +1,28 @@
 # requirements.txt
-streamlit
-requests
+# 이 파일은 Python 프로젝트의 의존성 라이브러리를 정의합니다.
+
+# FastAPI 웹 프레임워크
+fastapi
+
+# 비동기 웹 서버 (ASGI) - 표준 설치에는 python-multipart 포함
+uvicorn[standard]
+
+# 비동기 HTTP 클라이언트
+httpx
+
+# HTML/XML 파싱 라이브러리
 beautifulsoup4
-feedparser
-langdetect
+
+# Jinja2 템플릿 엔진 (UI 렌더링에 필요)
+jinja2
+
+# 웹 자동화 라이브러리 (naver.me 단축 변환에 필요)
+# 특정 버전 명시: playwright
+playwright
+
+# Starlette Session Middleware의 의존성
+itsdangerous
+
+# --- 새로 추가된 라이브러리 ---
+# 텍스트 분석 및 클러스터링 (자동 그룹화 기능에 필요)
+scikit-learn
