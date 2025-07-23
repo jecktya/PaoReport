@@ -373,7 +373,7 @@ if st.session_state.final_articles:
                     if len(common_kws) > 2:
                         title_kws = ", ".join(common_kws[:2]) + "..."
                     else:
-                        title_kws = ", ".join(common_kws) # 수정된 부분: ", ". ".join" -> ", ".join"
+                        title_kws = ", ".join(common_kws) # 수정된 부분
                     auto_group_title = f"■ {title_kws} 관련"
                 
                 final_copy_list_for_textarea.append(auto_group_title)
@@ -499,15 +499,14 @@ if st.session_state.final_articles:
 
                 col_preview, col_copy = st.columns([0.75, 0.25])
                 with col_preview:
-                    st.markdown(f"[� 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+                    st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
                 with col_copy:
                     if st.button("📋 1건 복사", key=f"copy_{key}"):
-                        # 1건 복사는 요청하신 형식으로 변경
                         ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                         st.session_state.copied_text = ctext
                         # st.experimental_rerun() # 제거
 
-                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
+                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
                     st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
                 st.markdown("---") # 그룹 내 기사 구분선
         
@@ -602,4 +601,3 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
-�
