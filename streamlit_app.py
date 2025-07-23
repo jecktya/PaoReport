@@ -470,8 +470,9 @@ if st.session_state.final_articles:
                     f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
                     unsafe_allow_html=True
                 )
+                # 605번 줄 (이전 607번 줄)을 포함한 날짜/키워드 표시 부분 재작성
                 st.markdown(
-                    f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
+                    f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
                     unsafe_allow_html=True
                 )
                 
@@ -502,12 +503,11 @@ if st.session_state.final_articles:
                     st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
                 with col_copy:
                     if st.button("📋 1건 복사", key=f"copy_{key}"):
-                        # 1건 복사는 요청하신 형식으로 변경
-                        ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}" # '=' 기호 제거
+                        ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                         st.session_state.copied_text = ctext
                         # st.experimental_rerun() # 제거
 
-                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
+                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
                     st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
                 st.markdown("---") # 그룹 내 기사 구분선
         
@@ -537,7 +537,7 @@ if st.session_state.final_articles:
                 else:
                     if item_key in st.session_state.selected_keys:
                         st.session_state.selected_keys.remove(item_key)
-                # st.experimental_rerun() # 제거
+                    # st.experimental_rerun() # 제거
 
             def update_manual_grouping(item_key):
                 if st.session_state[f"manual_group_checkbox_{item_key}"]:
@@ -546,16 +546,16 @@ if st.session_state.final_articles:
                 else:
                     if item_key in st.session_state.manual_grouped_keys:
                         st.session_state.manual_grouped_keys.remove(item_key)
-                # st.experimental_rerun() # 제거
+                    # st.experimental_rerun() # 제거
 
             # 기사 제목과 언론사 표시 (UI 표시용)
             st.markdown(
                 f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
                 unsafe_allow_html=True
             )
-            # 발행일과 매칭된 키워드 표시
+            # 605번 줄 (이전 607번 줄)을 포함한 날짜/키워드 표시 부분 재작성
             st.markdown(
-                f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
+                f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
                 unsafe_allow_html=True
             )
             
@@ -584,15 +584,14 @@ if st.session_state.final_articles:
 
             col_preview, col_copy = st.columns([0.75, 0.25])
             with col_preview:
-                st.markdown(f"[� 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+                st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
             with col_copy:
-                if st.button("📋 1건 복사", key=f"copy_{key}"):
-                    # 1건 복사는 요청하신 형식으로 변경
-                    ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}" # '=' 기호 제거
+                if st.button("� 1건 복사", key=f"copy_{key}"):
+                    ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                     st.session_state.copied_text = ctext
                     # st.experimental_rerun() # 제거
 
-            if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
+            if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
                 st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
 
     final_txt = "\n\n".join(final_copy_list_for_textarea)
@@ -602,3 +601,4 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
+�
