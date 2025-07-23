@@ -502,12 +502,12 @@ if st.session_state.final_articles:
                     st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
                 with col_copy:
                     if st.button("📋 1건 복사", key=f"copy_{key}"):
-                        # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
-                        ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
+                        # 1건 복사는 요청하신 형식으로 변경
+                        ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}" # '=' 기호 제거
                         st.session_state.copied_text = ctext
                         # st.experimental_rerun() # 제거
 
-                if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
+                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
                     st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
                 st.markdown("---") # 그룹 내 기사 구분선
         
@@ -582,18 +582,17 @@ if st.session_state.final_articles:
                     help="이 기사를 수동 그룹에 포함합니다." 
                 )
 
-            # 기사 바로보기 링크 및 1건 복사 버튼
             col_preview, col_copy = st.columns([0.75, 0.25])
             with col_preview:
-                st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
+                st.markdown(f"[� 기사 바로보기]({convert_to_mobile_link(art['url'])})")
             with col_copy:
                 if st.button("📋 1건 복사", key=f"copy_{key}"):
-                    # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
-                    ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
+                    # 1건 복사는 요청하신 형식으로 변경
+                    ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}" # '=' 기호 제거
                     st.session_state.copied_text = ctext
                     # st.experimental_rerun() # 제거
 
-            if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
+            if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
                 st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
 
     final_txt = "\n\n".join(final_copy_list_for_textarea)
@@ -603,3 +602,4 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
+�
