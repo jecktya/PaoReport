@@ -602,4 +602,3 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
-�
