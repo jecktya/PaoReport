@@ -505,7 +505,7 @@ if st.session_state.final_articles:
                         # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
                         ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
                         st.session_state.copied_text = ctext
-                        st.experimental_rerun()
+                        # st.experimental_rerun() # 제거
 
                 if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
                     st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
@@ -591,7 +591,7 @@ if st.session_state.final_articles:
                     # 1건 복사는 그냥 선택된 기사 형식으로 (■ 제목 (언론사))
                     ctext = f"■ {art['title']} ({art['press']})\n{convert_to_mobile_link(art['url'])}"
                     st.session_state.copied_text = ctext
-                    st.experimental_rerun()
+                    # st.experimental_rerun() # 제거
 
             if st.session_state.get("copied_text", "").startswith(f"■ {art['title']}"):
                 st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
