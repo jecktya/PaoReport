@@ -432,7 +432,7 @@ if st.session_state.final_articles:
                     if len(group_title_keywords) > 2:
                         title_kws = ", ".join(group_title_keywords[:2]) + "..."
                     else:
-                        title_kws = ", ".join(group_title_keywords)
+                        title_kws = ", ". ".join(group_title_keywords)
                     st.markdown(f"**### 자동 그룹 {group_idx + 1}: {title_kws} 관련 ({len(group['articles'])}건)**")
                 else:
                     st.markdown(f"**### 자동 그룹 {group_idx + 1} ({len(group['articles'])}건)**")
@@ -470,9 +470,8 @@ if st.session_state.final_articles:
                     f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
                     unsafe_allow_html=True
                 )
-                # 605번 줄 (이전 607번 줄)을 포함한 날짜/키워드 표시 부분 재작성
                 st.markdown(
-                    f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
+                    f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
                     unsafe_allow_html=True
                 )
                 
@@ -503,11 +502,12 @@ if st.session_state.final_articles:
                     st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
                 with col_copy:
                     if st.button("📋 1건 복사", key=f"copy_{key}"):
+                        # 1건 복사는 요청하신 형식으로 변경
                         ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                         st.session_state.copied_text = ctext
                         # st.experimental_rerun() # 제거
 
-                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
+                if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
                     st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
                 st.markdown("---") # 그룹 내 기사 구분선
         
@@ -553,9 +553,9 @@ if st.session_state.final_articles:
                 f"<div style='user-select: text;'>■ {art['title']} ({art['press']})</div>",
                 unsafe_allow_html=True
             )
-            # 605번 줄 (이전 607번 줄)을 포함한 날짜/키워드 표시 부분 재작성
+            # 발행일과 매칭된 키워드 표시
             st.markdown(
-                f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>",
+                f"<div style='color:gray;font-size:13px;'>시간: {art['pubdate'].strftime('%Y-%m-%d %H:%M')} | 키워드: {', '.join(art['matched'])}</div>", # 🕒 -> 시간:
                 unsafe_allow_html=True
             )
             
@@ -586,12 +586,13 @@ if st.session_state.final_articles:
             with col_preview:
                 st.markdown(f"[📎 기사 바로보기]({convert_to_mobile_link(art['url'])})")
             with col_copy:
-                if st.button("� 1건 복사", key=f"copy_{key}"):
+                if st.button("📋 1건 복사", key=f"copy_{key}"):
+                    # 1건 복사는 요청하신 형식으로 변경
                     ctext = f"[{art['press']}] {art['title']}\n{convert_to_mobile_link(art['url'])}"
                     st.session_state.copied_text = ctext
                     # st.experimental_rerun() # 제거
 
-            if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"):
+            if st.session_state.get("copied_text", "").startswith(f"[{art['press']}] {art['title']}"): # 시작 문자열 변경에 맞춰 조건 수정
                 st.text_area("복사된 내용", st.session_state.copied_text, height=80, key=f"copied_area_{key}")
 
     final_txt = "\n\n".join(final_copy_list_for_textarea)
@@ -601,4 +602,3 @@ if st.session_state.final_articles:
     # 복사 내용 다운로드 버튼
     st.download_button("📄 복사 내용 다운로드 (.txt)", final_txt, file_name="news.txt")
     st.markdown("📋 위 텍스트를 직접 복사하거나 다운로드 버튼을 눌러 저장하세요.")
-�
